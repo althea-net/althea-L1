@@ -10,7 +10,7 @@ import (
 var (
 	ParamStoreKeyEnableOnboarding     = []byte("EnableOnboarding")
 	ParamsStoreKeyWhitelistedChannels = []byte("WhitelistedChannels")
-	DefaultWhitelistedChannels        = []string{}
+	DefaultWhitelistedChannels        = []string{""}
 )
 
 var _ paramtypes.ParamSet = &Params{}

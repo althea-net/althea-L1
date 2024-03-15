@@ -1,16 +1,11 @@
 package ante_test
 
 import (
-	"encoding/json"
 	"math/big"
 	"testing"
 	"time"
 
-	abci "github.com/tendermint/tendermint/abci/types"
-	tmlog "github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
-	tmtypes "github.com/tendermint/tendermint/types"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
@@ -77,7 +72,7 @@ func (suite *AnteTestSuite) SetupTest() {
 	cfg := sdk.GetConfig()
 	cfg.SetBech32PrefixForAccount("althea", "altheapub")
 
-	suite.app = Setup(checkTx, func(app *althea.AltheaApp, genesis althea.GenesisState) althea.GenesisState {
+	suite.app = althea.Setup(checkTx, func(app *althea.AltheaApp, genesis althea.GenesisState) althea.GenesisState {
 		if suite.enableFeemarket {
 			// setup feemarketGenesis params
 			feemarketGenesis := feemarkettypes.DefaultGenesisState()
@@ -142,53 +137,6 @@ func (suite *AnteTestSuite) SetupTest() {
 // DefaultConsensusParams defines the default Tendermint consensus params used in
 // EthermintApp testing.
 // nolint: exhaustruct
-var DefaultConsensusParams = &abci.ConsensusParams{
-	Block: &abci.BlockParams{
-		MaxBytes: 200000,
-		MaxGas:   -1, // no limit
-	},
-	Evidence: &tmproto.EvidenceParams{
-		MaxAgeNumBlocks: 302400,
-		MaxAgeDuration:  504 * time.Hour, // 3 weeks is the max duration
-		MaxBytes:        10000,
-	},
-	Validator: &tmproto.ValidatorParams{
-		PubKeyTypes: []string{
-			tmtypes.ABCIPubKeyTypeEd25519,
-		},
-	},
-}
-
-// Setup initializes a new Althea app. A Nop logger is set in AltheaApp.
-func Setup(isCheckTx bool, patchGenesis func(*althea.AltheaApp, althea.GenesisState) althea.GenesisState) *althea.AltheaApp {
-	db := dbm.NewMemDB()
-	app := althea.NewAltheaApp(tmlog.NewNopLogger(), db, nil, true, map[int64]bool{}, althea.DefaultNodeHome, 5, althea.MakeEncodingConfig(), simapp.EmptyAppOptions{})
-	if !isCheckTx {
-		// init chain must be called to stop deliverState from being nil
-		genesisState := althea.NewDefaultGenesisState()
-		if patchGenesis != nil {
-			genesisState = patchGenesis(app, genesisState)
-		}
-
-		stateBytes, err := json.MarshalIndent(genesisState, "", " ")
-		if err != nil {
-			panic(err)
-		}
-
-		// Initialize the chain
-		app.InitChain(
-			// nolint: exhaustruct
-			abci.RequestInitChain{
-				ChainId:         "althea_417834-1",
-				Validators:      []abci.ValidatorUpdate{},
-				ConsensusParams: DefaultConsensusParams,
-				AppStateBytes:   stateBytes,
-			},
-		)
-	}
-
-	return app
-}
 
 func TestAnteTestSuite(t *testing.T) {
 	// nolint: exhaustruct
