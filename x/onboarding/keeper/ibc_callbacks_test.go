@@ -20,9 +20,9 @@ import (
 	ibcgotesting "github.com/cosmos/ibc-go/v4/testing"
 	ibcmock "github.com/cosmos/ibc-go/v4/testing/mock"
 
+	"github.com/Canto-Network/Canto/v5/contracts"
 	erc20types "github.com/Canto-Network/Canto/v5/x/erc20/types"
 
-	"github.com/althea-net/althea-L1/contracts"
 	"github.com/althea-net/althea-L1/x/onboarding/keeper"
 	onboardingtest "github.com/althea-net/althea-L1/x/onboarding/testutil"
 	onboardingtypes "github.com/althea-net/althea-L1/x/onboarding/types"

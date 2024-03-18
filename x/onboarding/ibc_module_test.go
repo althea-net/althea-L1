@@ -16,8 +16,9 @@ import (
 
 	evmtypes "github.com/evmos/ethermint/x/evm/types"
 
+	"github.com/Canto-Network/Canto/v5/contracts"
+
 	althea "github.com/althea-net/althea-L1/app"
-	"github.com/althea-net/althea-L1/contracts"
 	ibctesting "github.com/althea-net/althea-L1/ibcutils/testing"
 	onboardingtest "github.com/althea-net/althea-L1/x/onboarding/testutil"
 )
