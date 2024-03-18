@@ -3,8 +3,8 @@ use crate::utils::{
     bulk_get_user_keys, get_convertible_coin, one_atom_128, send_funds_bulk, EthermintUserKey,
     ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
 };
+use althea_proto::althea::microtx::v1::MsgMicrotx;
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
-use althea_proto::microtx::v1::MsgMicrotx;
 use clarity::Uint256;
 use deep_space::{Address, Coin, Contact, Msg, PrivateKey};
 use rand::distributions::Uniform;

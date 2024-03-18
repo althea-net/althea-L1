@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 
+use althea_proto::althea::microtx::v1::MsgMicrotx;
 use althea_proto::althea_test::gaia::icaauth::v1::{MsgRegisterAccount, MsgSubmitTx};
 use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::{
     ParamChange, ParameterChangeProposal,
@@ -18,10 +19,6 @@ use althea_proto::cosmos_sdk_proto::{
         },
     },
 };
-
-// ---------------------------------------TEST FUNCTIONS---------------------------------------
-
-use althea_proto::microtx::v1::MsgMicrotx;
 use deep_space::client::type_urls::MSG_MICROTX_TYPE_URL;
 use deep_space::error::CosmosGrpcError;
 use deep_space::{Address, Coin, Contact, CosmosPrivateKey, Msg, PrivateKey};
@@ -41,11 +38,10 @@ use crate::{
 pub const MSG_REGISTER_ACCOUNT_TYPE_URL: &str = "/gaia.icaauth.v1.MsgRegisterAccount";
 pub const MSG_SUBMIT_TX_TYPE_URL: &str = "/gaia.icaauth.v1.MsgSubmitTx";
 
-/// Runs the "happy-path" functionality of the Interchain Accounts (ICA) Host Module on Gravity Bridge Chain:
-/// 1. Enable Host on Gravity and Controller on the IBC test chain
+/// Runs the "happy-path" functionality of the Interchain Accounts (ICA) Host Module on Althea-L1:
+/// 1. Enable Host on Althea-L1 and Controller on the IBC test chain
 /// 2. Register an Interchain Account controlled by the IBC test chain and fund it with footoken
-/// 3. Deploy an ERC20 for footoken on Ethereum
-/// 4. Submit a MsgSendToEth to the ICA Controller module
+/// 3. Submit a MsgMicrotx via the ICA paying in footoken and confirm the transaction was successful
 pub async fn ica_host_happy_path(
     althea_contact: &Contact,
     ibc_contact: &Contact,
