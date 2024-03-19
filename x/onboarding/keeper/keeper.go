@@ -20,13 +20,11 @@ var _ transfertypes.ICS4Wrapper = Keeper{}
 
 // Keeper struct
 type Keeper struct {
-	paramstore     paramtypes.Subspace
-	accountKeeper  types.AccountKeeper
-	bankKeeper     types.BankKeeper
-	ics4Wrapper    porttypes.ICS4Wrapper
-	channelKeeper  types.ChannelKeeper
-	transferKeeper types.TransferKeeper
-	erc20Keeper    types.Erc20Keeper
+	ParamStore    paramtypes.Subspace
+	AccountKeeper types.AccountKeeper
+	BankKeeper    types.BankKeeper
+	Ics4Wrapper   porttypes.ICS4Wrapper
+	Erc20Keeper   types.Erc20Keeper
 }
 
 // NewKeeper returns keeper
@@ -35,6 +33,7 @@ func NewKeeper(
 	ak types.AccountKeeper,
 	bk types.BankKeeper,
 	ek types.Erc20Keeper,
+	i4 porttypes.ICS4Wrapper,
 ) *Keeper {
 	// set KeyTable if it has not already been set
 	if !ps.HasKeyTable() {
@@ -42,29 +41,27 @@ func NewKeeper(
 	}
 
 	return &Keeper{
-		paramstore:    ps,
-		accountKeeper: ak,
-		bankKeeper:    bk,
-		erc20Keeper:   ek,
+		ParamStore:    ps,
+		AccountKeeper: ak,
+		BankKeeper:    bk,
+		Erc20Keeper:   ek,
+		Ics4Wrapper:   i4,
 	}
 }
 
-func (k *Keeper) SetTransferKeeper(tk types.TransferKeeper) {
-	k.transferKeeper = tk
-}
-
-func (k *Keeper) SetChannelKeeper(ck types.ChannelKeeper) {
-	k.channelKeeper = ck
-}
-
-// SetICS4Wrapper sets the ICS4 wrapper to the keeper.
-// It panics if already set
-func (k *Keeper) SetICS4Wrapper(ics4Wrapper porttypes.ICS4Wrapper) {
-	if k.ics4Wrapper != nil {
-		panic("ICS4 wrapper already set")
+func (k Keeper) Validate() {
+	if k.AccountKeeper == nil {
+		panic("Nil account keeper")
 	}
-
-	k.ics4Wrapper = ics4Wrapper
+	if k.BankKeeper == nil {
+		panic("Nil bank keeper")
+	}
+	if k.Ics4Wrapper == nil {
+		panic("Nil ICS4 wrapper")
+	}
+	if k.Erc20Keeper == nil {
+		panic("Nil erc20 keeper")
+	}
 }
 
 // Logger returns logger
@@ -77,15 +74,15 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 // SendPacket implements the ICS4Wrapper interface from the transfer module.
 // It calls the underlying SendPacket function directly to move down the middleware stack.
 func (k Keeper) SendPacket(ctx sdk.Context, channelCap *capabilitytypes.Capability, packet exported.PacketI) error {
-	return k.ics4Wrapper.SendPacket(ctx, channelCap, packet)
+	return k.Ics4Wrapper.SendPacket(ctx, channelCap, packet)
 }
 
 // WriteAcknowledgement implements the ICS4Wrapper interface from the transfer module.
 // It calls the underlying WriteAcknowledgement function directly to move down the middleware stack.
 func (k Keeper) WriteAcknowledgement(ctx sdk.Context, channelCap *capabilitytypes.Capability, packet exported.PacketI, ack exported.Acknowledgement) error {
-	return k.ics4Wrapper.WriteAcknowledgement(ctx, channelCap, packet, ack)
+	return k.Ics4Wrapper.WriteAcknowledgement(ctx, channelCap, packet, ack)
 }
 
 func (k Keeper) GetAppVersion(ctx sdk.Context, portID, channelID string) (string, bool) {
-	return k.ics4Wrapper.GetAppVersion(ctx, portID, channelID)
+	return k.Ics4Wrapper.GetAppVersion(ctx, portID, channelID)
 }

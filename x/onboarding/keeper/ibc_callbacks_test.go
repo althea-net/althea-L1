@@ -260,10 +260,7 @@ func (suite *KeeperTestSuite) TestOnRecvPacket() {
 
 			sp, found := suite.app.ParamsKeeper.GetSubspace(onboardingtypes.ModuleName)
 			suite.Require().True(found)
-			suite.app.OnboardingKeeper = keeper.NewKeeper(sp, suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.Erc20Keeper)
-			suite.app.OnboardingKeeper.SetChannelKeeper(suite.app.IbcKeeper.ChannelKeeper)
-			suite.app.OnboardingKeeper.SetTransferKeeper(mockTransferKeeper)
-			suite.app.OnboardingKeeper.SetICS4Wrapper(suite.app.IbcKeeper.ChannelKeeper)
+			suite.app.OnboardingKeeper = keeper.NewKeeper(sp, suite.app.AccountKeeper, suite.app.BankKeeper, suite.app.Erc20Keeper, suite.app.IbcKeeper.ChannelKeeper)
 
 			// Fund receiver account with the transferred amount
 			coins = sdk.NewCoins(sdk.NewCoin(ibcDenom, transferAmount))

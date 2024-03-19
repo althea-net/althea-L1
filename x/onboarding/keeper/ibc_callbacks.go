@@ -54,7 +54,7 @@ func (k Keeper) OnRecvPacket(
 	}
 
 	// get the recipient account
-	account := k.accountKeeper.GetAccount(ctx, recipient)
+	account := k.AccountKeeper.GetAccount(ctx, recipient)
 
 	// onboarding is not supported for module accounts
 	if _, isModuleAccount := account.(authtypes.ModuleAccountI); isModuleAccount {
@@ -77,14 +77,14 @@ func (k Keeper) OnRecvPacket(
 	)
 
 	//convert coins to ERC20 token
-	pairID := k.erc20Keeper.GetTokenPairID(ctx, transferredCoin.Denom)
+	pairID := k.Erc20Keeper.GetTokenPairID(ctx, transferredCoin.Denom)
 	if len(pairID) == 0 {
 		// short-circuit: if the denom is not registered, conversion will fail
 		// so we can continue with the rest of the stack
 		return ack
 	}
 
-	pair, exists := k.erc20Keeper.GetTokenPair(ctx, pairID)
+	pair, exists := k.Erc20Keeper.GetTokenPair(ctx, pairID)
 	if !exists || !pair.Enabled {
 		// no-op: continue with the rest of the stack without conversion
 		return ack
@@ -96,7 +96,7 @@ func (k Keeper) OnRecvPacket(
 	// NOTE: don't call ValidateBasic since we've already validated the ICS20 packet data
 
 	// Use MsgConvertCoin to convert the Cosmos Coin to an ERC20
-	if _, err = k.erc20Keeper.ConvertCoin(sdk.WrapSDKContext(ctx), convertMsg); err != nil {
+	if _, err = k.Erc20Keeper.ConvertCoin(sdk.WrapSDKContext(ctx), convertMsg); err != nil {
 		logger.Error("failed to convert coins", "error", err)
 		return ack
 	}

@@ -592,9 +592,10 @@ func NewAltheaApp(
 
 	// Note: onboarding keeper must have transfer keeper and channel keeper and the ics4 wrapper set
 	onboardingKeeper := *onboardingkeeper.NewKeeper(
-		app.GetSubspace(onboardingtypes.ModuleName), accountKeeper, bankKeeper, erc20Keeper,
+		app.GetSubspace(onboardingtypes.ModuleName), accountKeeper, bankKeeper, erc20Keeper, ibcKeeper.ChannelKeeper,
 	)
 	app.OnboardingKeeper = &onboardingKeeper
+	app.OnboardingKeeper.Validate()
 
 	ibcTransferKeeper := ibctransferkeeper.NewKeeper(
 		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
@@ -603,10 +604,6 @@ func NewAltheaApp(
 	)
 	app.IbcTransferKeeper = &ibcTransferKeeper
 	ibcTransferAppModule := transfer.NewAppModule(ibcTransferKeeper)
-
-	onboardingKeeper.SetTransferKeeper(ibcTransferKeeper)
-	onboardingKeeper.SetChannelKeeper(ibcKeeper.ChannelKeeper)
-	onboardingKeeper.SetICS4Wrapper(ibcKeeper.ChannelKeeper)
 
 	icaHostKeeper := icahostkeeper.NewKeeper(
 		appCodec, keys[icahosttypes.StoreKey], app.GetSubspace(icahosttypes.SubModuleName),
