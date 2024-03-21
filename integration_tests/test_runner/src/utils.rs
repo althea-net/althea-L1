@@ -145,6 +145,10 @@ pub fn one_atom_128() -> u128 {
     1000000u128
 }
 
+pub fn one_hundred_atom() -> Uint256 {
+    (1000000u128 * 100).into()
+}
+
 pub fn one_eth() -> Uint256 {
     one_eth_128().into()
 }
@@ -872,15 +876,21 @@ pub async fn send_erc20_bulk(
         .await
         .unwrap();
     let mut transactions = Vec::new();
-    for address in destinations {
-        let send = web3.erc20_send(
-            amount,
-            *address,
-            erc20,
-            *MINER_PRIVATE_KEY,
-            Some(OPERATION_TIMEOUT),
-            vec![SendTxOption::Nonce(nonce)],
-        );
+    for (i, address) in destinations.iter().enumerate() {
+        // Ethermint does not do transaction ordering like Ethereum does, so we need to add a slight delay to
+        // ensure the transactions arrive at the right time and get queued. Otherwise we get incorrect nonce errors
+        let send = async move {
+            sleep(Duration::from_secs(i as u64)).await;
+            web3.erc20_send(
+                amount,
+                *address,
+                erc20,
+                *MINER_PRIVATE_KEY,
+                Some(OPERATION_TIMEOUT),
+                vec![SendTxOption::Nonce(nonce)],
+            )
+            .await
+        };
         transactions.push(send);
         nonce += 1u64.into();
     }

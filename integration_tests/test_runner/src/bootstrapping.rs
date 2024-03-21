@@ -166,9 +166,7 @@ pub async fn send_erc20s_to_evm_users(
 
     info!("Actually funding EVM users with the ERC20s");
     for erc20 in erc20_contracts {
-        for dest in &destinations {
-            send_erc20_bulk(amount, erc20, &[*dest], web3).await;
-        }
+        send_erc20_bulk(amount, erc20, &destinations, web3).await;
     }
     Ok(())
 }
@@ -365,21 +363,23 @@ pub async fn start_ibc_relayer(
         .unwrap();
     info!("test-runner starting IBC relayer mode: init hermes, create ibc channel, start hermes");
     setup_relayer_keys().unwrap();
+    info!("Relayer keys set up");
 
-    let gravity_channel_qc = IbcChannelQueryClient::connect(COSMOS_NODE_GRPC.as_str())
+    let althea_channel_qc = IbcChannelQueryClient::connect(COSMOS_NODE_GRPC.as_str())
         .await
         .expect("Could not connect channel query client");
 
     // Wait for the ibc channel to be created and find the channel ids
     let channel_id_timeout = Duration::from_secs(60 * 5);
-    let gravity_channel = get_channel(
-        gravity_channel_qc,
+    info!("Getting channel...");
+    let althea_channel = get_channel(
+        althea_channel_qc,
         get_ibc_chain_id(),
         Some(channel_id_timeout),
     )
     .await;
-    if gravity_channel.is_err() {
-        info!("No IBC channels exist between gravity-test-1 and ibc-test-1, creating one now...");
+    if althea_channel.is_err() {
+        info!("No IBC channels exist between althea_417834-1 and ibc-test-1, creating one now...");
         create_ibc_channel(hermes_base());
     }
     thread::spawn(|| {
