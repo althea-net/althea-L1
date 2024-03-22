@@ -9,13 +9,13 @@ use crate::utils::{
     send_funds_bulk, vote_yes_on_proposals, wait_for_proposals_to_execute, EthermintUserKey,
     ValidatorKeys, ADDRESS_PREFIX, OPERATION_TIMEOUT, STAKING_TOKEN,
 };
+use althea_proto::althea::microtx::v1::MsgMicrotx;
 use althea_proto::cosmos_sdk_proto::cosmos::authz::v1beta1::{
     GenericAuthorization, Grant, MsgExec, MsgGrant,
 };
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::{Input, MsgMultiSend, MsgSend, Output};
 use althea_proto::cosmos_sdk_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use althea_proto::cosmos_sdk_proto::cosmos::params::v1beta1::ParamChange;
-use althea_proto::microtx::v1::MsgMicrotx;
 use clarity::Uint256;
 use deep_space::error::CosmosGrpcError;
 use deep_space::{Address, Coin, Contact, Msg, PrivateKey};

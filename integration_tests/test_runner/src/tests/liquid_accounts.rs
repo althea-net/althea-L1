@@ -11,15 +11,15 @@ use crate::utils::{
     ValidatorKeys, COINS_FOR_REGISTERING, MIN_GLOBAL_FEE_AMOUNT, OPERATION_TIMEOUT, STAKING_TOKEN,
     TOTAL_TIMEOUT,
 };
+use althea_proto::althea::microtx::v1::query_client::QueryClient as MicrotxQueryClient;
+use althea_proto::althea::microtx::v1::{
+    LiquidInfrastructureAccount, MsgLiquify, QueryLiquidAccountRequest,
+};
 use althea_proto::canto::erc20::v1::query_client::QueryClient as Erc20QueryClient;
 use althea_proto::canto::erc20::v1::QueryTokenPairRequest;
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::query_client::QueryClient as BankQueryClient;
 use althea_proto::cosmos_sdk_proto::cosmos::bank::v1beta1::QueryDenomMetadataRequest;
 use althea_proto::cosmos_sdk_proto::cosmos::base::abci::v1beta1::TxResponse;
-use althea_proto::microtx::v1::query_client::QueryClient as MicrotxQueryClient;
-use althea_proto::microtx::v1::{
-    LiquidInfrastructureAccount, MsgLiquify, QueryLiquidAccountRequest,
-};
 use clarity::{Address as EthAddress, Uint256};
 use deep_space::error::CosmosGrpcError;
 use deep_space::{Address as CosmosAddress, Coin, Contact, Fee, Msg, PrivateKey};

@@ -104,3 +104,59 @@ jobs:
         run: tests/all-up-test.sh ICA_HOST
         env:
           NO_IMAGE_BUILD: True
+  ONBOARDING_DEFAULT_PARAMS:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Starts the onboarding module with the default params
+        run: tests/all-up-test.sh ONBOARDING_DEFAULT_PARAMS
+        env:
+          NO_IMAGE_BUILD: True
+  ONBOARDING_DISABLED_WHITELISTED:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Starts the onboarding module disabled with a whitelisted channel
+        run: tests/all-up-test.sh ONBOARDING_DISABLED_WHITELISTED
+        env:
+          NO_IMAGE_BUILD: True
+  ONBOARDING_DISABLE_AFTER:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Starts the onboarding module permissively, but disables it after a transfer
+        run: tests/all-up-test.sh ONBOARDING_DISABLE_AFTER
+        env:
+          NO_IMAGE_BUILD: True
+  ONBOARDING_DELIST_AFTER:
+    needs: native_token
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: jpribyl/action-docker-layer-caching@v0.1.1
+        with:
+          key: integration-test-cache-{hash}
+          restore-keys: |
+            integration-test-cache-
+      - name: Starts the onboarding module permissively, but removes the channel from the whilelist after a transfer
+        run: tests/all-up-test.sh TEST_NAME
+        env:
+          NO_IMAGE_BUILD: True

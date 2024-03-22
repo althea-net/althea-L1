@@ -19,6 +19,10 @@ use test_runner::tests::liquid_accounts::liquid_accounts_test;
 use test_runner::tests::lockup::lockup_test;
 use test_runner::tests::microtx_fees::microtx_fees_test;
 use test_runner::tests::native_token::native_token_test;
+use test_runner::tests::onboarding::onboarding_default_params;
+use test_runner::tests::onboarding::onboarding_delist_after;
+use test_runner::tests::onboarding::onboarding_disable_after;
+use test_runner::tests::onboarding::onboarding_disabled_whitelisted;
 use test_runner::utils::one_atom;
 use test_runner::utils::one_hundred_eth;
 use test_runner::utils::send_funds_bulk;
@@ -154,6 +158,58 @@ pub async fn main() {
             start_ibc_relayer(&contact, &ibc_contact, &keys, &ibc_keys).await;
             info!("Start ICA Host test");
             ica_host_happy_path(&contact, &ibc_contact, keys, ibc_keys).await;
+            return;
+        } else if test_type == "ONBOARDING_DEFAULT_PARAMS" {
+            start_ibc_relayer(&contact, &ibc_contact, &keys, &ibc_keys).await;
+            info!("Start onboarding default params test");
+            onboarding_default_params(
+                &contact,
+                &ibc_contact,
+                keys,
+                ibc_keys,
+                erc20_addresses,
+                EVM_USER_KEYS.clone(),
+            )
+            .await;
+            return;
+        } else if test_type == "ONBOARDING_DISABLED_WHITELISTED" {
+            start_ibc_relayer(&contact, &ibc_contact, &keys, &ibc_keys).await;
+            info!("Start onboarding disabled yet whitelisted test");
+            onboarding_disabled_whitelisted(
+                &contact,
+                &ibc_contact,
+                keys,
+                ibc_keys,
+                erc20_addresses,
+                EVM_USER_KEYS.clone(),
+            )
+            .await;
+            return;
+        } else if test_type == "ONBOARDING_DISABLE_AFTER" {
+            start_ibc_relayer(&contact, &ibc_contact, &keys, &ibc_keys).await;
+            info!("Start onboarding disable after test");
+            onboarding_disable_after(
+                &contact,
+                &ibc_contact,
+                keys,
+                ibc_keys,
+                erc20_addresses,
+                EVM_USER_KEYS.clone(),
+            )
+            .await;
+            return;
+        } else if test_type == "ONBOARDING_DELIST_AFTER" {
+            start_ibc_relayer(&contact, &ibc_contact, &keys, &ibc_keys).await;
+            info!("Start onboarding delist after test");
+            onboarding_delist_after(
+                &contact,
+                &ibc_contact,
+                keys,
+                ibc_keys,
+                erc20_addresses,
+                EVM_USER_KEYS.clone(),
+            )
+            .await;
             return;
         }
     }

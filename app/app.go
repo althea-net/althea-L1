@@ -130,6 +130,9 @@ import (
 	"github.com/althea-net/althea-L1/x/microtx"
 	microtxkeeper "github.com/althea-net/althea-L1/x/microtx/keeper"
 	microtxtypes "github.com/althea-net/althea-L1/x/microtx/types"
+	"github.com/althea-net/althea-L1/x/onboarding"
+	onboardingkeeper "github.com/althea-net/althea-L1/x/onboarding/keeper"
+	onboardingtypes "github.com/althea-net/althea-L1/x/onboarding/types"
 )
 
 func init() {
@@ -189,6 +192,7 @@ var (
 		vesting.AppModuleBasic{},
 		lockup.AppModuleBasic{},
 		microtx.AppModuleBasic{},
+		onboarding.AppModuleBasic{},
 		evm.AppModuleBasic{},
 		erc20.AppModuleBasic{},
 		feemarket.AppModuleBasic{},
@@ -209,6 +213,7 @@ var (
 		lockuptypes.ModuleName:         nil,
 		microtxtypes.ModuleName:        nil,
 		gasfreetypes.ModuleName:        nil,
+		onboardingtypes.ModuleName:     nil,
 		feemarkettypes.ModuleName:      nil,
 		icatypes.ModuleName:            nil,
 	}
@@ -258,13 +263,15 @@ type AltheaApp struct { // nolint: golint
 	IbcKeeper         *ibckeeper.Keeper
 	EvidenceKeeper    *evidencekeeper.Keeper
 	IbcTransferKeeper *ibctransferkeeper.Keeper
-	LockupKeeper      *lockupkeeper.Keeper
-	MicrotxKeeper     *microtxkeeper.Keeper
-	GasfreeKeeper     *gasfreekeeper.Keeper
 	EvmKeeper         *evmkeeper.Keeper
 	Erc20Keeper       *erc20keeper.Keeper
 	FeemarketKeeper   *feemarketkeeper.Keeper
 	IcaHostKeeper     *icahostkeeper.Keeper
+
+	LockupKeeper     *lockupkeeper.Keeper
+	MicrotxKeeper    *microtxkeeper.Keeper
+	GasfreeKeeper    *gasfreekeeper.Keeper
+	OnboardingKeeper *onboardingkeeper.Keeper
 
 	// make scoped keepers public for test purposes
 	ScopedIBCKeeper      *capabilitykeeper.ScopedKeeper
@@ -336,15 +343,6 @@ func (app AltheaApp) ValidateMembers() {
 	if app.IbcTransferKeeper == nil {
 		panic("Nil IbcTransferKeeper!")
 	}
-	if app.LockupKeeper == nil {
-		panic("Nil LockupKeeper!")
-	}
-	if app.MicrotxKeeper == nil {
-		panic("Nil MicrotxKeeper!")
-	}
-	if app.GasfreeKeeper == nil {
-		panic("Nil GasfreeKeeper!")
-	}
 	if app.EvmKeeper == nil {
 		panic("Nil EvmKeeper!")
 	}
@@ -356,6 +354,19 @@ func (app AltheaApp) ValidateMembers() {
 	}
 	if app.IcaHostKeeper == nil {
 		panic("Nil IcaHostKeeper!")
+	}
+
+	if app.LockupKeeper == nil {
+		panic("Nil LockupKeeper!")
+	}
+	if app.MicrotxKeeper == nil {
+		panic("Nil MicrotxKeeper!")
+	}
+	if app.GasfreeKeeper == nil {
+		panic("Nil GasfreeKeeper!")
+	}
+	if app.OnboardingKeeper == nil {
+		panic("Nil OnboardingKeeper")
 	}
 
 	// scoped keepers
@@ -408,8 +419,10 @@ func NewAltheaApp(
 		ibchost.StoreKey, upgradetypes.StoreKey, evidencetypes.StoreKey,
 		ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		erc20types.StoreKey, evmtypes.StoreKey, feemarkettypes.StoreKey,
-		lockuptypes.StoreKey, microtxtypes.StoreKey, gasfreetypes.StoreKey,
 		icahosttypes.StoreKey,
+
+		lockuptypes.StoreKey, microtxtypes.StoreKey, gasfreetypes.StoreKey,
+		onboardingtypes.StoreKey,
 	)
 	// Transient keys which only last for a block before being wiped
 	// Params uses thsi to track whether some parameter changed this block or not
@@ -537,49 +550,6 @@ func NewAltheaApp(
 	)
 	app.IbcKeeper = &ibcKeeper
 
-	ibcTransferKeeper := ibctransferkeeper.NewKeeper(
-		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
-		ibcKeeper.ChannelKeeper, ibcKeeper.ChannelKeeper, &ibcKeeper.PortKeeper,
-		accountKeeper, bankKeeper, scopedTransferKeeper,
-	)
-	app.IbcTransferKeeper = &ibcTransferKeeper
-
-	icaHostKeeper := icahostkeeper.NewKeeper(
-		appCodec, keys[icahosttypes.StoreKey], app.GetSubspace(icahosttypes.SubModuleName),
-		ibcKeeper.ChannelKeeper, &ibcKeeper.PortKeeper,
-		accountKeeper, scopedICAHostKeeper, app.MsgServiceRouter(),
-	)
-	app.IcaHostKeeper = &icaHostKeeper
-
-	// Connect the inter-module staking hooks together, these are the only modules allowed to interact with how staking
-	// works, including inflationary staking rewards and punishing bad actors (excluding genutil which works at genesis to
-	// seed the set of validators from the genesis txs set)
-	stakingKeeper.SetHooks(
-		stakingtypes.NewMultiStakingHooks(
-			distrKeeper.Hooks(),
-			slashingKeeper.Hooks(),
-		),
-	)
-
-	mintKeeper := mintkeeper.NewKeeper(
-		appCodec,
-		keys[minttypes.StoreKey],
-		app.GetSubspace(minttypes.ModuleName),
-		stakingKeeper,
-		accountKeeper,
-		bankKeeper,
-		authtypes.FeeCollectorName,
-	)
-	app.MintKeeper = &mintKeeper
-
-	crisisKeeper := crisiskeeper.NewKeeper(
-		app.GetSubspace(crisistypes.ModuleName),
-		invCheckPeriod,
-		bankKeeper,
-		authtypes.FeeCollectorName,
-	)
-	app.CrisisKeeper = &crisisKeeper
-
 	// EVM keepers
 	tracer := cast.ToString(appOpts.Get(ethermintsrvflags.EVMTracer))
 
@@ -620,6 +590,72 @@ func NewAltheaApp(
 	evmKeeper = *evmKeeper.SetHooks(evmkeeper.NewMultiEvmHooks(erc20Keeper.Hooks()))
 	app.EvmKeeper = &evmKeeper
 
+	// Note: onboarding keeper must have transfer keeper and channel keeper and the ics4 wrapper set
+	onboardingKeeper := *onboardingkeeper.NewKeeper(
+		app.GetSubspace(onboardingtypes.ModuleName), accountKeeper, bankKeeper, erc20Keeper, ibcKeeper.ChannelKeeper,
+	)
+	app.OnboardingKeeper = &onboardingKeeper
+	app.OnboardingKeeper.Validate()
+
+	ibcTransferKeeper := ibctransferkeeper.NewKeeper(
+		appCodec, keys[ibctransfertypes.StoreKey], app.GetSubspace(ibctransfertypes.ModuleName),
+		onboardingKeeper, ibcKeeper.ChannelKeeper, &ibcKeeper.PortKeeper,
+		accountKeeper, bankKeeper, scopedTransferKeeper,
+	)
+	app.IbcTransferKeeper = &ibcTransferKeeper
+	ibcTransferAppModule := transfer.NewAppModule(ibcTransferKeeper)
+
+	icaHostKeeper := icahostkeeper.NewKeeper(
+		appCodec, keys[icahosttypes.StoreKey], app.GetSubspace(icahosttypes.SubModuleName),
+		ibcKeeper.ChannelKeeper, &ibcKeeper.PortKeeper,
+		accountKeeper, scopedICAHostKeeper, app.MsgServiceRouter(),
+	)
+	app.IcaHostKeeper = &icaHostKeeper
+
+	// Construct the IBC Transfer "stack", a chain of IBC modules which enable arbitrary loosely-coupled Msg processing per module
+	var transferStack porttypes.IBCModule = transfer.NewIBCModule(ibcTransferKeeper)
+	transferStack = onboarding.NewIBCMiddleware(onboardingKeeper, transferStack)
+
+	// Construct the ICA Host stack, which for the host module is very simple but the controller module could require
+	// a more complex stack to handle the responses
+	icaAppModule := ica.NewAppModule(nil, &icaHostKeeper)
+	var icaHostStack porttypes.IBCModule = icahost.NewIBCModule(icaHostKeeper)
+
+	// The stacks get wrapped into the router, which delegates applicable Msgs to the configured stack
+	// i.e. only IBC Transfer Msgs will be routed to the transferStack, and only ICA Host Msgs will be routed to icaHostStack
+	ibcRouter := porttypes.NewRouter()
+	ibcRouter.AddRoute(ibctransfertypes.ModuleName, transferStack)
+	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostStack)
+	ibcKeeper.SetRouter(ibcRouter)
+
+	// Connect the inter-module staking hooks together, these are the only modules allowed to interact with how staking
+	// works, including inflationary staking rewards and punishing bad actors (excluding genutil which works at genesis to
+	// seed the set of validators from the genesis txs set)
+	stakingKeeper.SetHooks(
+		stakingtypes.NewMultiStakingHooks(
+			distrKeeper.Hooks(),
+			slashingKeeper.Hooks(),
+		),
+	)
+
+	mintKeeper := mintkeeper.NewKeeper(
+		appCodec,
+		keys[minttypes.StoreKey],
+		app.GetSubspace(minttypes.ModuleName),
+		stakingKeeper,
+		accountKeeper,
+		bankKeeper,
+		authtypes.FeeCollectorName,
+	)
+	app.MintKeeper = &mintKeeper
+
+	crisisKeeper := crisiskeeper.NewKeeper(
+		app.GetSubspace(crisistypes.ModuleName),
+		invCheckPeriod,
+		bankKeeper,
+		authtypes.FeeCollectorName,
+	)
+	app.CrisisKeeper = &crisisKeeper
 	// Register custom governance proposal logic via router keys and handler functions
 	govRouter := govtypes.NewRouter()
 	govRouter.AddRoute(govtypes.RouterKey, govtypes.ProposalHandler).
@@ -639,20 +675,6 @@ func NewAltheaApp(
 		govRouter,
 	)
 	app.GovKeeper = &govKeeper
-
-	// Construct the IBC "stack", a chain of IBC modules which enable arbitrary loosely-coupled Msg processing per module
-	// This is the simplest sort of stack, with just the core and a single IBC app for token transfers
-	// e.g. advanced Interchain Accounts implementations need a point of execution for this chain to modify state once
-	// updates on a foreign chain have been observed
-	ibcTransferAppModule := transfer.NewAppModule(ibcTransferKeeper)
-	ibcTransferIBCModule := transfer.NewIBCModule(ibcTransferKeeper)
-	icaAppModule := ica.NewAppModule(nil, &icaHostKeeper)
-	icaHostIBCModule := icahost.NewIBCModule(icaHostKeeper)
-
-	ibcRouter := porttypes.NewRouter()
-	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ibcTransferIBCModule).
-		AddRoute(icahosttypes.SubModuleName, icaHostIBCModule)
-	ibcKeeper.SetRouter(ibcRouter)
 
 	evidenceKeeper := *evidencekeeper.NewKeeper(
 		appCodec,
@@ -757,13 +779,14 @@ func NewAltheaApp(
 		ibc.NewAppModule(&ibcKeeper),
 		params.NewAppModule(paramsKeeper),
 		ibcTransferAppModule,
-		gasfree.NewAppModule(gasfreeKeeper),
-		lockup.NewAppModule(lockupKeeper, bankKeeper),
-		microtx.NewAppModule(microtxKeeper, accountKeeper),
 		evm.NewAppModule(&evmKeeper, accountKeeper),
 		erc20.NewAppModule(erc20Keeper, accountKeeper),
 		feemarket.NewAppModule(feemarketKeeper),
 		icaAppModule,
+		gasfree.NewAppModule(gasfreeKeeper),
+		lockup.NewAppModule(lockupKeeper, bankKeeper),
+		microtx.NewAppModule(microtxKeeper, accountKeeper),
+		onboarding.NewAppModule(onboardingKeeper),
 	)
 	app.MM = &mm
 
@@ -797,6 +820,7 @@ func NewAltheaApp(
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
 		erc20types.ModuleName,
+		onboardingtypes.ModuleName,
 		icatypes.ModuleName,
 	)
 
@@ -815,6 +839,7 @@ func NewAltheaApp(
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
+		onboardingtypes.ModuleName,
 		ibchost.ModuleName,
 		banktypes.ModuleName,
 		authtypes.ModuleName,
@@ -852,6 +877,7 @@ func NewAltheaApp(
 		lockuptypes.ModuleName,
 		microtxtypes.ModuleName,
 		erc20types.ModuleName,
+		onboardingtypes.ModuleName,
 		crisistypes.ModuleName,
 		icatypes.ModuleName,
 	)
@@ -1030,6 +1056,21 @@ func (app *AltheaApp) GetMemKey(storeKey string) *sdk.MemoryStoreKey {
 	return app.memKeys[storeKey]
 }
 
+// GetBaseApp returns the baseapp, used for testing
+func (app *AltheaApp) GetBaseApp() *baseapp.BaseApp { return app.BaseApp }
+
+// GetStakingKeeper returns the staking Keeper, used for testing
+func (app *AltheaApp) GetStakingKeeper() stakingkeeper.Keeper { return *app.StakingKeeper }
+
+// GetIBCKeeper returns the IBC Keeper, used for testing
+func (app *AltheaApp) GetIBCKeeper() *ibckeeper.Keeper { return app.IbcKeeper }
+
+// GetScopedIBCKeeper returns the Scoped IBC Keeper, used for testing
+func (app *AltheaApp) GetScopedIBCKeeper() capabilitykeeper.ScopedKeeper { return *app.ScopedIBCKeeper }
+
+// GetTxConfig returns the Encoding config's tx config, used for testing
+func (app *AltheaApp) GetTxConfig() client.TxConfig { return app.EncodingConfig.TxConfig }
+
 // GetSubspace returns a param subspace for a given module name.
 // Reading params is fine, but they should be updated by governace proposal
 func (app *AltheaApp) GetSubspace(moduleName string) paramstypes.Subspace {
@@ -1128,6 +1169,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(erc20types.ModuleName)
 	paramsKeeper.Subspace(feemarkettypes.ModuleName)
 	paramsKeeper.Subspace(icahosttypes.SubModuleName)
+	paramsKeeper.Subspace(onboardingtypes.ModuleName)
 
 	return paramsKeeper
 }
